@@ -8,10 +8,7 @@ class Player:
       raise InitError(str(name)+" is not a valid name.")
     self.name = record[0]
     self.matches = record[1] if len(record)>1 else [] # matches are tuples of [opponent_rating, result]
-    if flag["simulate"]:
-      self.strength = random.random() # in simulations, estimates chances of winning
-    else:
-      self.strength = record[2] if len(record)>2 else .5 # can be calculated based on record
+    self.strength = random.random() # in simulations, estimates chances of winning
     self.rating = 1000
     self.calculate_standing()
   
@@ -71,8 +68,8 @@ class Player:
     if requested == "name":
       string += self.name
     elif requested == "summary":
-      string += "("+str(self.rating)+":{0:.2f}".format(self.strength)+") "+self.name
-      string += " W-"+str(self.wins)+" L-"+str(self.losses)+" T-"+str(self.ties)
+      string += "({0:4}:{1:2.0f})  {2:10}".format(self.rating, 100*self.strength, self.name)
+      string += "  W-{0:4}  L-{1:4}  T-{2:4}".format(self.wins, self.losses, self.ties)
     elif requested == "rating":
       return int(self.rating)
     elif requested == "matches":
@@ -146,21 +143,21 @@ class BBMatch(Match):
       raise InitError(str(self.players)+" is not a valid list of players.")
     if len(self.players) is not 4:
       raise InitError(str(self.players)+" is "+("not long enough." if len(self.players)<4 else "too long."))
-    # splits list of players into teams, and places higher ranked player of team on top
-    # then rejoins list in sorted (T1H, T1L, T2H, T2L) form
-    self.players = self.players[:1].sort().append(self.players[2:].sort())
   
   @staticmethod
-  def set_Ratings(players, outcome):
+  def set_ratings(players, outcome):
     # 4-player 'bug-out' chess match
-    # Higher-rated winner matched with lower-rated loser
-    # And visa-versa
+    # Players rated against average opponent
     # players should be in known sorted form
     # as per check_players() sorting
-    players[0].add_match(players[3].report("rating"), outcome)
-    players[1].add_match(players[2].report("rating"), outcome)
-    players[2].add_match(players[1].report("rating"), (not outcome) if outcome is not None else None)
-    players[3].add_match(players[0].report("rating"), (not outcome) if outcome is not None else None)
+    team_one_rating = int((players[0].report("rating")+players[1].report("rating"))/2)
+    team_two_rating = int((players[2].report("rating")+players[3].report("rating"))/2)
+    players[0].add_match(players[2].report("rating"), outcome)
+    players[1].add_match(players[3].report("rating"), outcome)
+    players[2].add_match(players[0].report("rating"), (not outcome) if outcome is not None else None)
+    players[3].add_match(players[1].report("rating"), (not outcome) if outcome is not None else None)
+    for player in players:
+      player.adjust_rating()
 
 class ChessError(Warning):
   def __init__(self, string="An unidentified Chess Error has occurred!"):

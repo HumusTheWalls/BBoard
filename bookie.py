@@ -1,6 +1,7 @@
 # Bug-Board Official Automated Rating Database
 import sys
 import random
+import time
 
 
     ########
@@ -8,17 +9,28 @@ import random
   ########
 # Oh god so much
 
+
+## Bug Rating Theory
+# (R4+R2)*(R2)*2(ELO[avg])
+# -------------------
+# (R3+R1)*(R1+R2)
+
 # Flags
-flag = {"simulate" : False,
-        "loud"     : False}
+flag = {"loud"     : False,
+        "bug"      : False,
+        "players"  : 10,
+        "games"    : 100}
 from Classes import *
 
 def do_things():
-  if flag["simulate"]:
-    matches = run_games(create_players(20), 1000)
-    display_results(matches)
-    pass
-  pass
+  if flag["loud"] and flag["games"] > 100:
+    response = ""
+    while response != ("y" or "yes" or "n" or "no"):
+      response = input("Warning: Games take .5 secs each. The {0} games selected will take {1} seconds. Continue?".format(flag["games"],flag["games"]/2))
+      if response == ("n" or "no"):
+        raise ChessError("Please choose a smaller batch of games, or turn off 'loud' flag.")
+  matches = run_games(create_players(flag["players"]), flag["games"])
+  display_results(matches)
 
 def create_players(count):
   player_list = []
@@ -35,18 +47,56 @@ def run_games(players, game_count):
   if flag["loud"]:
     print("") # separating line for clarity
   for i in range(game_count):
-    playing = random.sample(players, 2)
-    playing.sort()
-    if flag["loud"]:
-      print(playing[0].report("name")+" vs "+playing[1].report("name"))
-    win_chance = .5+(playing[0].report("strength")-playing[1].report("strength"))
-    outcome = True if random.random() < win_chance else False
-    if flag["loud"]:
-      print("   - "+playing[0].report("name")+" "+("wins!" if outcome else "tied!" if outcome is None else "loses!"))
-      print("     ({0:.2f}-{1:.2f}) = {2:.2f}".format(playing[0].report("strength"),playing[1].report("strength"),win_chance))
-      print("  - Match Summary:")
-    match = Match(playing, outcome)
+    if not flag["loud"]:
+      print("Match {0}".format(i), end="\r") # placeswrite-point at beginning of line
+    else:
+      print("Match {0}".format(i))
+    match = None
+    if flag["bug"]:
+      playing = random.sample(players, 4)
+      team_one = playing[:2]
+      team_one.sort()
+      team_two = playing[2:]
+      team_two.sort()
+      playing.clear()
+      playing.extend(team_one)
+      playing.extend(team_two)
+      if flag["loud"]:
+        string = ""
+        for player in team_one:
+          string += player.report("name")+","
+        string = string[:-1]
+        string += " vs "
+        for player in team_two:
+          string += player.report("name")+","
+        string= string[:-1]
+        print(string)
+      team_one_strength = (team_one[0].report("strength")+team_one[1].report("strength"))/2
+      team_two_strength = (team_two[0].report("strength")+team_two[1].report("strength"))/2
+      win_chance = .5+2*(team_one_strength - team_two_strength)
+      outcome = True if random.random() < win_chance else False #True = team one wins
+      if flag["loud"]:
+        print("   - Team "+("One" if outcome else "None" if outcome is None else "Two")+" wins!")
+        print("     {0:.2f}-{1:.2f} = {2:.2f}".format(team_one_strength, team_two_strength, win_chance))
+        print("  - Match Summary:")
+      match = BBMatch(playing, outcome)
+    else:
+      playing = random.sample(players, 2)
+      playing.sort()
+      if flag["loud"]:
+        print(playing[0].report("name")+" vs "+playing[1].report("name"))
+      win_chance = .5+2*(playing[0].report("strength")-playing[1].report("strength"))
+      outcome = True if random.random() < win_chance else False
+      if flag["loud"]:
+        print("   - "+playing[0].report("name")+" "+("wins!" if outcome else "tied!" if outcome is None else "loses!"))
+        print("     ({0:.2f}-{1:.2f}) = {2:.2f}".format(playing[0].report("strength"),playing[1].report("strength"),win_chance))
+        print("  - Match Summary:")
+      match = Match(playing, outcome)
     match_list.append(match)
+    if flag["loud"]:
+      time.sleep(.5) # artificial pacing to remove server lag
+    else:
+      time.sleep(.1)
   return match_list
 
 def display_results(match_list):
@@ -70,13 +120,17 @@ def display_results(match_list):
 if __name__ == "__main__":
   try:
     commands = sys.argv[1:]
-    command_count = 0
-    for command in commands:
-      if command in flag:
-        flag[command] = True
-        command_count += 1
+    i = 0
+    while(i < len(commands)):
+      if commands[i] in flag:
+        if type(flag[commands[i]]) is bool:
+          flag[commands[i]] = True
+        if type(flag[commands[i]]) is int: # some flags can take arguments
+          flag[commands[i]] = int(commands[i+1])
+          i += 1
       else:
-        raise ChessError("Invalid command sent: "+command)
+        raise ChessError("Invalid command sent: "+commands[i])
+      i += 1
     do_things()
-  except KeyboardInterupt as KI:
+  except KeyboardInterrupt as KI:
     print("~~~~~~~~~~~~~~~~~~~~~~Ok Bye!~~~~~~~~~~~~~~~~~~~")
