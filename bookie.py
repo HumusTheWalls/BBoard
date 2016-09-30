@@ -9,12 +9,6 @@ import time
   ########
 # Oh god so much
 
-
-## Bug Rating Theory
-# (R4+R2)*(R2)*2(ELO[avg])
-# -------------------
-# (R3+R1)*(R1+R2)
-
 # Flags
 flag = {"loud"     : False,
         "bug"      : False,
