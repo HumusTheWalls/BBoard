@@ -122,7 +122,7 @@ class Player:
     if requested == "name":
       string += self.name
     elif requested == "summary":
-      string += "({0:4}:{1:2.0f})  {2:10}".format(self.rating, 100*self.strength, self.name)
+      string += "({0:4}:{1:2.0f})  {2:20}".format(self.rating, 100*self.strength, self.name)
       string += "  W-{0:4}  L-{1:4}  T-{2:4}".format(self.wins, self.losses, self.ties)
     elif requested == "rating":
       return int(self.rating)
@@ -218,3 +218,36 @@ class ChessError(Warning):
 class InitError(ChessError):
   def __init__(self, string=""):
     self.strerror = "Initilization failed: "+string
+
+   #################
+  # Silly Things  #
+ # Because Bored #
+#################
+player_name_list = [
+  "Bobbie McGee",
+  "Kelso Feltso",
+  "Samwise Gainsee",
+  "The One",
+  "Uncle Bruster",
+  "DaGirl NextDoor",
+  "Chez Prodijay",
+  "Notta Bot",
+  "Nerdy Boi",
+  "My Roommate",
+  "George Washington",
+  "John Adams",
+  "Alexander Hamilton",
+  "Napoleon Bonaparte",
+  "Julius Caesar",
+  "AppleBottom Jeans",
+  "Boots WitDaFur",
+  "Gandalf Greatname",
+  "Unworthy Opponent",
+  "Smart Squirrel",
+  "Poor Loser",
+  "Deep Blue",
+  "Arlet Sarsonel",
+  "Valley Girl",
+  "Earl Bootlicker",
+  "Jack Aronda",
+  "Thum Bollina"]

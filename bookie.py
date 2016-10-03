@@ -16,6 +16,7 @@ flag = {"loud"     : False,
         "games"    : 100}
 from Classes import *
 
+
 def do_things():
   if flag["loud"] and flag["games"] > 100:
     response = ""
@@ -30,8 +31,13 @@ def create_players(count):
   player_list = []
   if flag["loud"]:
     print("Players:")
+  global player_name_list
+  if count > len(player_name_list):
+    for i in range(len(player_name_list),count):
+      player_name_list.append("Player {0}".format(i))
+  player_names = random.sample(player_name_list, count)
   for i in range(count):
-    player_list.append(Player([str("Player "+str(i))]))
+    player_list.append(Player([player_names[i]]))
     if flag["loud"]:
       print("{0} at strength {1:.2f}".format(player_list[-1].report("name"),player_list[-1].report("strength")))
   return player_list
