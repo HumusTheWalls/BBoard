@@ -35,6 +35,7 @@ class Player:
     # for bug chess:
     # [ratings[], outcome[]]
     # where outcome=[team#, result]
+    # result is for team 1
     if flag["bug"]:
       team_averages = []
       team_averages.append(int((match[0][0]+match[0][1])/2)) # Team 1 is team_averages[0]
@@ -43,13 +44,13 @@ class Player:
       win_probability = 1/(pow(10,average_difference/400)+1)
       point_exchange = 0
       # using %2 to change team without knowing current team
-      if((team_averages[match[1][0]] <= team_averages[(match[1][0]+1)%2] and match[1][1]) or
-        (team_averages[match[1][0]] >= team_averages[(match[1][0]+1)%2] and not match[1][1])):
+      if((team_averages[0] <= team_averages[1] and match[1][1]) or
+        (team_averages[0] >= team_averages[1] and not match[1][1])):
         # Underdog team won
         # or Expected team loses
         point_exchange = 2*int(32*(1-win_probability)) # 2x because 2 players split points
-      elif((team_averages[match[1][0]] >= team_averages[(match[1][0]+1)%2] and match[1][1]) or
-        (team_averages[match[1][0]] <= team_averages[(match[1][0]+1)%2] and not match[1][1])):
+      elif((team_averages[0] >= team_averages[1] and match[1][1]) or
+        (team_averages[0] <= team_averages[1] and not match[1][1])):
         # Underdog team loses
         # or Expected team wins
         point_exchange = 2*int(32*win_probability)
@@ -72,18 +73,19 @@ class Player:
       validity = (match[0][1]+match[0][3])/(match[0][0]+match[0][2])
       # Determining R2
       #                            V if self rating is first player on team, use other rating
-      R2 = match[0][2*match[1][0]+(1 if self.rating == match[0][2*match[1][0]] else -1)]
-      carry_weight = R2/(match[0][2*match[1][0]]+match[0][2*match[1][0]+1])
-      point_exchange = int(validity*carry_weight*point_exchange)
+      R2 = match[0][2*match[1][0]+(1 if self.rating == match[0][2*match[1][0]] else 0)]
+      team_average = match[0][2*match[1][0]]+match[0][2*match[1][0]+1]
+      carry_weight = (2*R2/(2*team_average))
+      points = int(round(int(round(validity*point_exchange))*carry_weight)) # int() truncates by default
       if flag["loud"]:
-        print("    {0}pts ({1} vs {2})-{3:.0f}%".format(point_exchange, team_averages[0],team_averages[1],100*win_probability))
+        print("    {0}pts: {1:.2f}*{2:4}/{3:4}*{4:.0f}".format(points, validity, R2, team_average, point_exchange))
       if(match[1][0] is 0 and match[1][1] or
-        match[1][0] is 1 and match[1][1]):
+        match[1][0] is 1 and not match[1][1]):
         # Player wins
-        self.rating += point_exchange
+        self.rating += points
         self.wins += 1
       else: # No ties possible, only outcome is loss
-        self.rating -= point_exchange
+        self.rating -= points
         self.losses += 1
     else:
       win_probability = 1/(pow(10,(abs(match[0]-self.rating)/400))+1)
@@ -113,8 +115,6 @@ class Player:
         self.ties += 1
   
   def add_match(self, opponent_rating, outcome):
-    if type(opponent_rating) is not int or type(outcome) is not bool:
-      raise ChessError("Invalid match passed: "+str(outcome)+": "+str(opponent_rating))
     self.matches.append([opponent_rating, outcome])
   
   def report(self, requested="summary"):
@@ -204,17 +204,12 @@ class BBMatch(Match):
     # Players rated against average opponent
     # players should be in known sorted form
     # as per check_players() sorting
-    team_one_rating = int((players[0].report("rating")+players[1].report("rating"))/2)
-    team_two_rating = int((players[2].report("rating")+players[3].report("rating"))/2)
-    players[0].add_match(players[2].report("rating"), outcome)
-    players[1].add_match(players[3].report("rating"), outcome)
-    players[2].add_match(players[0].report("rating"), (not outcome) if outcome is not None else None)
-    players[3].add_match(players[1].report("rating"), (not outcome) if outcome is not None else None)
     ratings = []
     ratings.extend(list(player.report("rating") for player in players))
     for player in players:
-      # passed [ratings[],[team, outcome]]
-      player.adjust_rating([ratings, [(0 if player in players[:2] else 1), outcome]])
+      player.add_match(ratings, [(0 if player in players[:2] else 1), outcome])
+    for player in players:
+      player.adjust_rating()
 
 class ChessError(Warning):
   def __init__(self, string="An unidentified Chess Error has occurred!"):

@@ -103,12 +103,12 @@ def display_results(match_list):
       except ValueError:
         player_list.append(player)
   player_list.sort()
-  if not flag["loud"]:
-    total_points = 0
-    for player in player_list:
-      total_points += player.report("rating")
-      print(player.report())
-    print("Points per player: {0:.0f}".format(total_points/len(player_list)))
+  #if not flag["loud"]:
+  total_points = 0
+  for player in player_list:
+    total_points += player.report("rating")
+    print(player.report())
+  print("Points per player: {0:.0f}".format(total_points/len(player_list)))
 
 
 if __name__ == "__main__":
